@@ -1,0 +1,29 @@
+CIPolicE - Container Image Policy Engine
+========================================
+
+When Docker container images are scanned for quality deficiencies and
+security vulnerabilities, the outcome is a set of metrics. What would be
+the next steps to act on that?
+
+CIPolicE! This tool implements a durable_rules framework to allow for
+rule-controlled follow-up actions, and furthermore ships with powerful
+default rules useful in containerised environments, e.g. OpenShift.
+
+CIPolicE integrates with web hooks from Quay to make it work as
+invisible but decisive part of your container image workflow.
+
++----------------------+  +----------+-> shell command
+| Quay + Clair scanner |->| CIPolicE |-> oc command
++----------------------+  +----------+-> simple accept/reject
+
+CIPolicE is the result of a joint academic-industry research project
+involving the Service Prototyping Lab of Zurich University of Applied
+Sciences and Puzzle ITC, changing IT for the better.
+
+Installation
+------------
+pip(3) install -r src/dependencies.txt
+
+Usage
+-----
+cd src/ && python3 cipolice.py
