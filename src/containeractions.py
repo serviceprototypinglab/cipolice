@@ -1,7 +1,7 @@
 import os
 
 def mark(imagename):
-    os.system("./label.sh")
+    os.system(f"./label.sh {imagename}")
 
 def notify(imagename):
-    pass
+    print("NOTIFY maintainer! (if label maintainer was set in dockerfile? or via LDAP?)")

@@ -1,6 +1,12 @@
 #!/bin/sh
 
-img=node:12
+img=$1
+
+if [ -z "$img" ]
+then
+	echo "Syntax: label.sh <image:tag>" >&2
+	exit 1
+fi
 
 echo "Labels on $img before labelling:"
 docker inspect -f "{{json .Config.Labels }}" $img
