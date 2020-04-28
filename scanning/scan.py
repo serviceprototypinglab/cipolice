@@ -1,4 +1,5 @@
 import requests
+import pika
 import json
 import subprocess
 import sys
@@ -100,6 +101,15 @@ if __name__ == '__main__':
                     break
         elif sys.argv[1] == 'pull' and len(sys.argv) == 3:
             result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1])
-            print(f'Image: {sys.argv[2]}, Result: {result}')
+            message = f'{{"image": "{sys.argv[2]}", "level": "{result}"}}'
+            print(message)
+            connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+            channel = connection.channel()
+            channel.queue_declare(queue='hello')
+            channel.basic_publish(exchange='',
+                              routing_key='hello',
+                              body=message)
+            connection.close()
+
         else:
             print("Usage: scan.py <experiment/pull> <image>")
