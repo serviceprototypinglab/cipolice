@@ -48,6 +48,19 @@ The severity levels for clair are:
 Refer to clair's documentation for a detailed explanation of the severity levels.
 The program will return 'None' if no vlunerabilities are found by clair.
 
+This option will submit the result to the rule engine via RabbitMQ.
+
+### Detail mode
+
+If the detailed output from Clair is desired, run the above example as follows:
+
+```
+$ python3 scan.py detail nginx:latest
+```
+
+This option will generate a report of all CVEs at both stdout and a file called
+`output.json`
+
 ### Experiment mode
 
 Experiment mode will scan all images of the official `library` registry to
