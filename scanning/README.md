@@ -6,6 +6,7 @@ tag and the highest CVE severity level found in the image.
 ## Prerequisites
 
 - Install Docker and docker-compose
+- Install Klar, erlang and RabbitMQ server with `scanner_setup.sh`
 - `pip install -r requirements.txt`
 
 ## Setup
