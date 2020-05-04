@@ -84,6 +84,12 @@ def check(image, tag):
     elif 'Unknown' in result['Vulnerabilities']:
         return 'Unknown'
 
+def detail(image, tag):
+    result = scan(image, tag)
+    print(json.dumps(result['Vulnerabilities'], indent=2))
+    with open('output.json', 'w') as f:
+        json.dump(result['Vulnerabilities'], f, indent=2)
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -110,6 +116,9 @@ if __name__ == '__main__':
                               routing_key='hello',
                               body=message)
             connection.close()
+        elif sys.argv[1] == 'detail' and len(sys.argv) == 3:
+            detail(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1])
+
 
         else:
             print("Usage: scan.py <experiment/pull> <image>")
