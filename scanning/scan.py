@@ -3,6 +3,7 @@ import pika
 import json
 import subprocess
 import sys
+import find
 
 
 def get_names():
@@ -29,6 +30,15 @@ def scan(image, tag):
     subprocess.call(f'docker tag {image} localhost:5000/{image}-test', shell=True)
     subprocess.call(f'docker push localhost:5000/{image}-test', shell=True)
     p = subprocess.run(f'CLAIR_ADDR=http://localhost:6060 CLAIR_THRESHOLD=10 REGISTRY_INSECURE=TRUE JSON_OUTPUT=TRUE klar localhost:5000/{image}-test', shell=True, stdout=subprocess.PIPE)
+    try:
+        b = subprocess.run('oc get all -o json', shell=True, stdout=subprocess.PIPE)
+        images = find.extract_values(json.loads(b.stdout), 'image')
+        if f'{image}:{tag}' in images:
+            print(f"Warning, image {image} is currently in use")
+        else:
+            print("Scanned image has not been deployed to the cluster")
+    except:
+        print("Warning, cannot check cluster status")
     return json.loads(p.stdout)
 
 
@@ -70,25 +80,36 @@ def scan_all(names):
 def check(image, tag):
     result = scan(image, tag)
     if 'Defcon1' in result['Vulnerabilities']:
-        return 'Defcon1'
+        return 7
     elif 'Critical' in result['Vulnerabilities']:
-        return 'Critical'
+        return 6
     elif 'High' in result['Vulnerabilities']:
-        return 'High'
+        return 5
     elif 'Medium' in result['Vulnerabilities']:
-        return 'Medium'
+        return 4
     elif 'Low' in result['Vulnerabilities']:
-        return 'Low'
+        return 3
     elif 'Negligible' in result['Vulnerabilities']:
-        return 'Negligible'
+        return 2
     elif 'Unknown' in result['Vulnerabilities']:
-        return 'Unknown'
+        return 1
+    else:
+        return 0
 
 def detail(image, tag):
     result = scan(image, tag)
     print(json.dumps(result['Vulnerabilities'], indent=2))
     with open('output.json', 'w') as f:
         json.dump(result['Vulnerabilities'], f, indent=2)
+    choice = input("Manually whitelist image? [y/n]")
+    if choice == 'y':
+        subprocess.call(f'oc import-image {image}:{tag} --confirm', shell=True)
+        b = subprocess.run(f'oc get istag/{image}:{tag} -o json', shell=True, stdout=subprocess.PIPE)
+        data = json.loads(b.stdout)
+        ref = data['image']['dockerImageReference'].split('@')[1]
+        print(ref)
+        subprocess.call(f'oc annotate images/{ref} images.openshift.io/deny-execution=false --overwrite --as system:admin', shell=True)
+
 
 
 if __name__ == '__main__':
