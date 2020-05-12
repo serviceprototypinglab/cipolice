@@ -1,7 +1,11 @@
 #!/bin/sh
 
 ## DEMO HACK - reset node:12 image
-docker tag 7a73e56f893c node:12
+docker images --format "{{.Repository}}:{{.Tag}}" | grep -q node:12
+if [ $? == 0 ]
+then
+	docker tag 7a73e56f893c node:12
+fi
 
 img=$1
 
