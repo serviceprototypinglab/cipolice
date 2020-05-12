@@ -13,6 +13,9 @@ import containeractions
 
 app = flask.Flask(__name__)
 
+web_ruleset = None
+web_legacy = None
+
 # 1. durable_rules
 # -----------------------------------------------
 with ruleset("docker"):
@@ -48,7 +51,7 @@ def notify_maintainer(m):
     return containeractions.notify(m['image'])
 # -----------------------------------------------
 
-def runrules(msg, ruleset="cipolice-example.rules", legacy=True):
+def runrules(msg, ruleset, legacy):
     # 1. durable_rules
     if legacy:
         post("docker", msg)
@@ -64,11 +67,13 @@ def selftest(msg, ruleset, legacy):
 def webhook():
     data = list(flask.request.form.keys())[0]
     msg = json.loads(data)
-    runrules(msg)
+    runrules(msg, web_ruleset, web_legacy)
 
     return "OK"
 
 def main():
+    global web_ruleset, web_legacy
+
     ruleset_default = "cipolice-example.rules"
 
     parser = argparse.ArgumentParser(description="CIPolicE")
@@ -80,6 +85,8 @@ def main():
     args = parser.parse_args()
 
     if args.web:
+        web_ruleset = args.ruleset
+        web_legacy = args.legacy
         app.run(host="0.0.0.0", port=10080)
     elif args.test:
         msg = args.msg

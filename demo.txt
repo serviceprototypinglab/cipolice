@@ -5,3 +5,4 @@
 3. for the integration:
    python3 cipolice.py -wr clair.rules
    (+ HTTP POST coming from scanning tool)
+   curl -XPOST http://localhost:10080 -d '{"image": "node:12", "level": 3}'
