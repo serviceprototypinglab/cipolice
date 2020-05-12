@@ -128,7 +128,7 @@ if __name__ == '__main__':
                     break
         elif sys.argv[1] == 'pull' and len(sys.argv) == 3:
             result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1])
-            message = f'{{"image": "{sys.argv[2]}", "level": "{result}"}}'
+            message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
             print(message)
             connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
             channel = connection.channel()
