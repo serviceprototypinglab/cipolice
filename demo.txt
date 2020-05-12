@@ -1,3 +1,7 @@
 1. see label.sh demo hack
 
 2. curl -XPOST http://localhost:10080 -d '{"cve": "CVE-2020-7050", "clairresult": -1, "image": "node:12", "compromised": true}'
+
+3. for the integration:
+   python3 cipolice.py -wr clair.rules
+   (+ HTTP POST coming from scanning tool)
