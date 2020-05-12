@@ -23,7 +23,7 @@ def webhook():
     if msg == None:
         data = list(flask.request.form.keys())[0]
         msg = json.loads(data)
-    runrules(msg, web_ruleset, web_legacy)
+    runrules(msg, web_ruleset)
 
     return "OK"
 
