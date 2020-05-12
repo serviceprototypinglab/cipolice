@@ -1,0 +1,6 @@
+cve != ""
+	mark_image
+compromised == true
+	notify_maintainer
+cve == "CVE-1920-9183"
+	something_special

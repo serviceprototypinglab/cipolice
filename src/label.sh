@@ -1,5 +1,8 @@
 #!/bin/sh
 
+## DEMO HACK - reset node:12 image
+docker tag 7a73e56f893c node:12
+
 img=$1
 
 if [ -z "$img" ]

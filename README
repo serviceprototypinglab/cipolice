@@ -26,4 +26,4 @@ pip(3) install -r src/dependencies.txt
 
 Usage
 -----
-cd src/ && python3 cipolice.py
+cd src/; python3 cipolice.py -t
