@@ -65,8 +65,10 @@ def selftest(msg, ruleset, legacy):
 
 @app.route('/', methods=['POST'])
 def webhook():
-    data = list(flask.request.form.keys())[0]
-    msg = json.loads(data)
+    msg = flask.request.get_json()
+    if msg == None:
+        data = list(flask.request.form.keys())[0]
+        msg = json.loads(data)
     runrules(msg, web_ruleset, web_legacy)
 
     return "OK"
