@@ -1,5 +1,6 @@
 import rule_engine
 import time
+import os
 
 colors = {
     "green":    "\u001b[32m",
@@ -15,6 +16,8 @@ def loadrules(rulesfile):
     f = open(rulesfile)
 
     for line in f:
+        if line.strip().startswith("#"):
+            continue
         line = line.strip("\r\n")
         if not line.startswith("\t"):
             crule = line
@@ -40,7 +43,11 @@ def applyrules(rerules, msg, g):
     print(colors["blue"] + "-----" + colors["reset"])
     print(colors["blue"] + "EVENT:" + str(msg) + colors["reset"])
     print(colors["blue"] + "@TIME:" + time.asctime() + colors["reset"])
+    image = msg["image"]
+    needsbreak = False
     for rerule in rerules:
+        if needsbreak:
+            break
         hasmatch = False
         try:
             hasmatch = rerule.matches(msg)
@@ -52,9 +59,28 @@ def applyrules(rerules, msg, g):
             print(colors["green"] + "ACCEPT RULE:" + str(rerule) + colors["reset"])
             for action in rerules[rerule]:
                 print(colors["yellow"] + "→ ACTION:" + action + colors["reset"])
+                if action == "break":
+                    needsbreak = True
+                    print(colors["blue"] + "BREAK" + colors["reset"])
+                    break
                 res = None
                 try:
-                    res = g[action](msg)
+                    if action.endswith(".sh"):
+                        res = os.system(f"{action} '{image}'")
+                    elif ".py:" in action:
+                        mod, func = action.split(":")
+                        impcmd = f"import {mod[:-3]}"
+                        #print("IMPORT", impcmd)
+                        exec(impcmd)
+                        funccmd = f"a = {mod[:-3]}.{func}(\"{image}\")"
+                        #print("INVOKE", funccmd)
+                        exec(funccmd)
+                        res = eval("a")
+                    elif "http://" in action or "https://" in action:
+                        # TODO implement web hook
+                        pass
+                    else:
+                        res = g[action](msg)
                 except Exception as e:
                     print(colors["red"] + "E:" + str(e) + colors["reset"])
                     res = -1
