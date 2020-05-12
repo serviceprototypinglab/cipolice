@@ -43,7 +43,20 @@ def applyrules(rerules, msg, g):
     print(colors["blue"] + "-----" + colors["reset"])
     print(colors["blue"] + "EVENT:" + str(msg) + colors["reset"])
     print(colors["blue"] + "@TIME:" + time.asctime() + colors["reset"])
-    image = msg["image"]
+
+    osparamlist = []
+    funcparamlist = []
+    obparams = ("image",)
+    for obparam in obparams:
+        if not obparam in msg:
+            print(colors["red"] + "WARNING: Obligatory parameter " + obparam + " not present." + colors["reset"])
+            continue
+        v = msg[obparam]
+        osparamlist.append(f"'{v}'")
+        funcparamlist.append(f"\"{v}\"")
+    funcparamlist = ", ".join(funcparamlist)
+    osparamlist = " ".join(osparamlist)
+
     needsbreak = False
     for rerule in rerules:
         if needsbreak:
@@ -66,13 +79,13 @@ def applyrules(rerules, msg, g):
                 res = None
                 try:
                     if action.endswith(".sh"):
-                        res = os.system(f"{action} '{image}'")
+                        res = os.system(f"{action} {osparamlist}")
                     elif ".py:" in action:
                         mod, func = action.split(":")
                         impcmd = f"import {mod[:-3]}"
                         #print("IMPORT", impcmd)
                         exec(impcmd)
-                        funccmd = f"a = {mod[:-3]}.{func}(\"{image}\")"
+                        funccmd = f"a = {mod[:-3]}.{func}({funcparamlist})"
                         #print("INVOKE", funccmd)
                         exec(funccmd)
                         res = eval("a")

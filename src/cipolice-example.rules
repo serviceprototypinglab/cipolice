@@ -1,6 +1,6 @@
 cve != ""
-	mark_image
+	containeractions.py:mark
 compromised == true
-	notify_maintainer
+	containeractions.py:notify
 cve == "CVE-1920-9183"
 	something_special
