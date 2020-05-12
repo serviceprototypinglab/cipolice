@@ -41,7 +41,14 @@ def applyrules(rerules, msg, g):
     print(colors["blue"] + "EVENT:" + str(msg) + colors["reset"])
     print(colors["blue"] + "@TIME:" + time.asctime() + colors["reset"])
     for rerule in rerules:
-        if rerule.matches(msg):
+        hasmatch = False
+        try:
+            hasmatch = rerule.matches(msg)
+        except Exception as e:
+            # TODO differentiate better between: rule does not match / rule cannot match
+            #print("E", e)
+            pass
+        if hasmatch:
             print(colors["green"] + "ACCEPT RULE:" + str(rerule) + colors["reset"])
             for action in rerules[rerule]:
                 print(colors["yellow"] + "→ ACTION:" + action + colors["reset"])
@@ -49,7 +56,7 @@ def applyrules(rerules, msg, g):
                 try:
                     res = g[action](msg)
                 except Exception as e:
-                    print(colors["red"] + str(e) + colors["reset"])
+                    print(colors["red"] + "E:" + str(e) + colors["reset"])
                     res = -1
                 if res is 0 or res is True:
                     print(colors["yellow"] + "  ACTION SUCCESS" + colors["reset"])

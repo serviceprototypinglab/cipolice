@@ -1,0 +1,4 @@
+level < 3
+	notify_maintainer
+level >= 3 and level <= 7
+	blockimage

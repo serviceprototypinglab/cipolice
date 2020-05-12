@@ -48,17 +48,17 @@ def notify_maintainer(m):
     return containeractions.notify(m['image'])
 # -----------------------------------------------
 
-def runrules(msg):
+def runrules(msg, ruleset="cipolice-example.rules", legacy=True):
     # 1. durable_rules
-    post("docker", msg)
+    if legacy:
+        post("docker", msg)
 
     # 2. rule-engine
-    r = xrules.makerules("cipolice-example.rules")
+    r = xrules.makerules(ruleset)
     xrules.applyrules(r, msg, globals())
 
-def selftest():
-    msg = {"cve": "CVE-2020-7050", "clairresult": -1, "image": "node:12", "compromised": True}
-    runrules(msg)
+def selftest(msg, ruleset, legacy):
+    runrules(msg, ruleset, legacy)
 
 @app.route('/', methods=['POST'])
 def webhook():
@@ -69,17 +69,27 @@ def webhook():
     return "OK"
 
 def main():
+    ruleset_default = "cipolice-example.rules"
+
     parser = argparse.ArgumentParser(description="CIPolicE")
     parser.add_argument("-w", "--web", action="store_true", help="Run as web service on port 10080.")
     parser.add_argument("-t", "--test", action="store_true", help="Run in self-test mode.")
+    parser.add_argument("-l", "--legacy", action="store_true", help="Activate legacy durable_rules.")
+    parser.add_argument("-r", "--ruleset", action="store", default=ruleset_default, help=f"Ruleset to use (default: {ruleset_default}).")
+    parser.add_argument("msg", nargs="?")
     args = parser.parse_args()
 
     if args.web:
         app.run(host="0.0.0.0", port=10080)
     elif args.test:
-        selftest()
+        msg = args.msg
+        if not msg:
+            msg = {"cve": "CVE-2020-7050", "clairresult": -1, "image": "node:12", "compromised": True}
+        else:
+            msg = json.loads(msg)
+        selftest(msg, args.ruleset, args.legacy)
     else:
-        print("Not operation specified! Run with -h.", file=sys.stderr)
+        print("No operation specified! Run with -h.", file=sys.stderr)
 
 if __name__ == '__main__':
     main()
