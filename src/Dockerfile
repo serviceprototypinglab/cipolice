@@ -1,8 +1,11 @@
 FROM python:3-slim
 
-RUN pip3 install rule-engine flask
+RUN pip3 install rule-engine flask pika
+RUN apt-get update && apt-get --assume-yes install --no-install-recommends docker.io wget && apt-get clean
 
-COPY *.rules cipolice.py xrules.py containeractions.py /opt/
+RUN wget -q https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz && tar xf oc.tar.gz && rm oc.tar.gz && mv oc /usr/local/bin
+
+COPY *.rules cipolice.py xrules.py containeractions.py label.sh /opt/
 
 EXPOSE 10080
 

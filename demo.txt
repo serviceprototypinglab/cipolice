@@ -4,6 +4,6 @@
 
 3. for the integration:
    python3 cipolice.py -wr clair.rules
-   (alternatively: docker build -t cipolice . && docker run -ti -p10080:10080 cipolice)
+   (alternatively: docker build -t cipolice . && docker run -ti -p10080:10080 -v /var/run/docker.sock:/var/run/docker.sock cipolice)
    (+ HTTP POST coming from scanning tool)
    curl -XPOST http://localhost:10080 -d '{"image": "node:12", "level": 3}'
