@@ -27,3 +27,13 @@ pip(3) install -r src/dependencies.txt
 Usage
 -----
 cd src/; python3 cipolice.py -t
+
+Rules
+-----
+Rules follow a condition-action model, with actions indented as block
+under each condition. Comments (#) are allowed. Actions can be shell
+scripts (must end in .sh), Python functions (must end in .py with
+colon-separated function name), or web hooks. Conditions are evaluated
+over JSON-formatted dictionary messages. The special action break
+terminates the rule processing per event. For an example including some
+invalid rules, have a look at src/*.rules.
