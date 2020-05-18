@@ -64,6 +64,7 @@ def scan_all(names):
         "Defcon1": 0
     }
     results_avg = {}
+    results_conv = {}
     errors = 0
     for image in names:
         try:
@@ -83,12 +84,20 @@ def scan_all(names):
             if result[0] == 7:
                 results['Defcon1'] += 1
             results_avg[image] = result[1]
+            results_conv[image] = result[2]
         except:
             errors += 1
     print(results)
     print(results_avg)
+    print(results_conv)
     print (f'Errors: {errors}')
     print(len(names))
+    with open('max.json', 'w') as f:
+        json.dump(results, f, indent=2)
+    with open('avg.json', 'w') as f:
+        json.dump(results_avg, f, indent=2)
+    with open('conv.json', 'w') as f:
+        json.dump(results_conv, f, indent=2)
 
 
 
@@ -139,7 +148,9 @@ def check(image, tag, mode):
         sum += len(result['Vulnerabilities']['Unknown'])
         count += len(result['Vulnerabilities']['Unknown'])
     tilavg = sum/count
-    return [tilmax, tilavg]
+    print(count)
+    itlconv = min([tilavg + count/50, 7])
+    return [tilmax, tilavg, itlconv]
 
 
 def detail(image, tag):
