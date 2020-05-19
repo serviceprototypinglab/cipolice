@@ -160,6 +160,9 @@ def detail(image, tag):
         json.dump(result['Vulnerabilities'], f, indent=2)
     choice = input("Manually whitelist image? [y/n]")
     if choice == 'y':
+        message = {'image': image, 'override': True}
+        requests.post('http://localhost:10080', json=message)
+        """
         subprocess.call(f'oc import-image {image}:{tag} --confirm', shell=True)
         b = subprocess.run(f'oc get istag/{image}:{tag} -o json', shell=True, stdout=subprocess.PIPE)
         data = json.loads(b.stdout)
@@ -167,6 +170,7 @@ def detail(image, tag):
         print(ref)
         subprocess.call(f'oc annotate images/{ref} images.openshift.io/deny-execution=false --overwrite --as system:admin', shell=True)
         subprocess.call(f'oc annotate images/{ref} images.openshift.io/timestamp={calendar.timegm(time.gmtime())} --overwrite --as system:admin', shell=True)
+        """
 
 
 
@@ -202,7 +206,7 @@ if __name__ == '__main__':
             """
             message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
             print(message)
-            #requests.post('http://localhost:10080', json=message)
+            requests.post('http://localhost:10080', json=message)
         elif sys.argv[1] == 'push' and len(sys.argv) == 3:
             result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1], 'push')
             """
@@ -218,7 +222,7 @@ if __name__ == '__main__':
             """
             message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
             print(message)
-            #requests.post('http://localhost:10080', json=message)
+            requests.post('http://localhost:10080', json=message)
         elif sys.argv[1] == 'detail' and len(sys.argv) == 3:
             detail(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1])
 

@@ -11,7 +11,7 @@ services:
 
   clair:
     container_name: clair_clair
-    image: quay.io/coreos/clair:latest
+    image: arminc/clair-local-scan
     restart: unless-stopped
     depends_on:
       - postgres
