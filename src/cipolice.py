@@ -1,6 +1,8 @@
 import argparse
 import sys
 import json
+import subprocess
+import time
 
 try:
     import flask
@@ -19,9 +21,26 @@ if "flask" in globals():
 
 web_ruleset = None
 
+def augment(msg):
+    p = subprocess.run(f"docker inspect {msg['image']} | jq '.[0].Config.Labels.maintainer'", shell=True, stdout=subprocess.PIPE)
+    maint = p.stdout.decode().strip()
+    if maint != "null":
+        maint = maint[1:-1]
+    else:
+        maint = None
+    msg["maintainer"] = maint
+    print("(augment)", maint)
+    return msg
+
 def runrules(msg, ruleset):
+    t_p1 = time.time()
+    msg = augment(msg)
+    t_p2 = time.time()
     r = xrules.makerules(ruleset)
+    t_p3 = time.time()
     xrules.applyrules(r, msg, globals())
+    t_p4 = time.time()
+    print("(timing) augment", t_p2 - t_p1, "load", t_p3 - t_p2, "apply", t_p4 - t_p3, "s")
 
 if "flask" in globals():
     @app.route('/', methods=['POST'])

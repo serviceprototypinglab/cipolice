@@ -1,5 +1,7 @@
 FROM python:3-slim
 
+LABEL maintainer="spio@zhaw.ch"
+
 RUN pip3 install rule-engine flask pika
 RUN apt-get update && apt-get --assume-yes install --no-install-recommends docker.io wget && apt-get clean
 
