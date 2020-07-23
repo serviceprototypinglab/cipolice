@@ -12,7 +12,7 @@ environments, e.g. OpenShift.
 
 CIPolicE integrates with web hooks from Quay to make it work as
 invisible but decisive part of your container image workflow; although
-other triggers are possible as well.
+other triggers are possible as well. HTTP and AMQP are implemented.
 
 +----------------------+  +----------+-> shell/oc command, web hook
 | Quay + Clair scanner |->| CIPolicE |-> digital signature on image
@@ -29,7 +29,17 @@ From source:
 
  cd src/
  pip(3) install -r dependencies.txt
+
+ # built-in test trigger
  python3 cipolice.py -t
+
+ # message queue trigger
+ python3 misc/mq-publisher.py
+ python3 cipolice.py -mr clair.rules
+
+ # web request trigger
+ python3 cipolice.py -w
+ curl -X POST -d '{"image": "nginx:latest", "cve": "CVE-X"}' http://localhost:10080/
 
 With container:
 
@@ -48,10 +58,14 @@ over JSON-formatted dictionary messages. The special action break
 terminates the rule processing per event. For an example including some
 invalid rules, have a look at src/*.rules.
 
+In the "src/sign" folder there are also experimental actions to
+cryptographically sign that images have been scanned and passed the
+policy.
+
 Image Scanner
 -------------
 
-Please have a look at the separate README file within the scanning
+Please have a look at the separate README file within the "scanning"
 folder. The scanning part scans individual images and generates suitable
 input for the policy engine. It is supposed to be integrated with
 OpenShift, although that part is under development.

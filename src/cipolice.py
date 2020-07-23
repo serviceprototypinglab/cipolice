@@ -75,9 +75,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="CIPolicE")
     if "flask" in globals():
-        parser.add_argument("-w", "--web", action="store_true", help="Run as web service on port 10080.")
+        parser.add_argument("-w", "--web", action="store_true", help="Run as web service on port 10080/HTTP.")
     if "pika" in globals():
-        parser.add_argument("-m", "--mq", action="store_true", help="Run as message queue client on port XXX.")
+        parser.add_argument("-m", "--mq", action="store_true", help="Run as message queue client on port 5672/AMQP.")
     parser.add_argument("-t", "--test", action="store_true", help="Run in self-test mode.")
     parser.add_argument("-r", "--ruleset", action="store", default=ruleset_default, help=f"Ruleset to use (default: {ruleset_default}).")
     parser.add_argument("msg", nargs="?")
@@ -91,7 +91,7 @@ def main():
     elif args.test:
         msg = args.msg
         if not msg:
-            msg = {"cve": "CVE-2020-7050", "clairresult": -1, "image": "node:12", "compromised": True}
+            msg = {"cve": "CVE-2020-7050", "clairresult": -1, "image": "nginx:latest", "compromised": True}
         else:
             msg = json.loads(msg)
         runrules(msg, args.ruleset)
