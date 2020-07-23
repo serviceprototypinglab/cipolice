@@ -42,6 +42,7 @@ def push(image, tag):
 def pull(image, tag):
     subprocess.call(f'docker pull {image}:{tag}', shell=True)
     p = push(image, tag)
+    """
     try:
         images = oc_find()
         if f'{image}:{tag}' in images:
@@ -50,6 +51,7 @@ def pull(image, tag):
             print("Scanned image has not been deployed to the cluster")
     except:
         print("Warning, cannot check cluster status")
+    """
     return p
 
 
