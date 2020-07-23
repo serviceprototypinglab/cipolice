@@ -20,13 +20,20 @@ CIPolicE is the result of a joint academic-industry research project
 involving the Service Prototyping Lab of Zurich University of Applied
 Sciences and Puzzle ITC, changing IT for the better.
 
-Installation
-------------
-pip(3) install -r src/dependencies.txt
+Installation and Usage
+----------------------
 
-Usage
------
-cd src/; python3 cipolice.py -t
+From source:
+
+ cd src/
+ pip(3) install -r dependencies.txt
+ python3 cipolice.py -t
+
+With container:
+
+ docker pull nginx:latest
+ docker run -ti -p 10080:10080 -v /var/run/docker.sock:/var/run/docker.sock cipolice
+ curl -X POST -d '{"image": "nginx:latest", "level": 3}' http://localhost:10080/
 
 Rules
 -----
