@@ -28,10 +28,10 @@ Installation and Usage
 From source:
 
  cd src/
- pip(3) install -r dependencies.txt
+ pip(3) install -r requirements.txt
 
- # built-in test trigger
- python3 cipolice.py -t
+ # built-in test trigger, with optional message
+ python3 cipolice.py -t [{"msg..."}]
 
  # message queue trigger
  python3 misc/mq-publisher.py
@@ -39,13 +39,13 @@ From source:
 
  # web request trigger
  python3 cipolice.py -w
- curl -X POST -d '{"image": "nginx:latest", "cve": "CVE-X"}' http://localhost:10080/
+ sh misc/http-publisher.sh example # in 2nd terminal
 
 With container:
 
  docker pull nginx:latest
- docker run -ti -p 10080:10080 -v /var/run/docker.sock:/var/run/docker.sock cipolice
- curl -X POST -d '{"image": "nginx:latest", "level": 3}' http://localhost:10080/
+ sh misc/cipolice-docker.sh
+ sh misc/http-publisher.sh clair # in 2nd terminal
 
 Rules
 -----

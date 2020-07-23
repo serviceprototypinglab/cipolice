@@ -22,7 +22,11 @@ if "flask" in globals():
 web_ruleset = None
 
 def augment(msg):
-    p = subprocess.run(f"docker inspect {msg['image']} | jq '.[0].Config.Labels.maintainer'", shell=True, stdout=subprocess.PIPE)
+    try:
+        p = subprocess.run(f"docker inspect {msg['image']} | jq '.[0].Config.Labels.maintainer'", shell=True, stdout=subprocess.PIPE)
+    except Exception as e:
+        print("(augment failed) " + str(e))
+        return msg
     maint = p.stdout.decode().strip()
     if maint != "null":
         maint = maint[1:-1]

@@ -1,6 +1,7 @@
 import rule_engine
 import time
 import os
+import urllib.request
 
 colors = {
     "green":    "\u001b[32m",
@@ -90,8 +91,9 @@ def applyrules(rerules, msg, g):
                         exec(funccmd)
                         res = eval("a")
                     elif "http://" in action or "https://" in action:
-                        # TODO implement web hook
-                        pass
+                        data = str(msg)
+                        req = urllib.request.Request(action, bytes(data, "utf-8"))
+                        res = urllib.request.urlopen(req)
                     else:
                         res = g[action](msg)
                 except Exception as e:
