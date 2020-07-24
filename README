@@ -10,13 +10,27 @@ rule-controlled follow-up actions based on image metrics, and
 furthermore ships with powerful default rules useful in containerised
 environments, e.g. OpenShift.
 
-CIPolicE integrates with web hooks from Quay to make it work as
+CIPolicE integrates with web hooks from scan tools to make it work as
 invisible but decisive part of your container image workflow; although
 other triggers are possible as well. HTTP and AMQP are implemented.
 
-+----------------------+  +----------+-> shell/oc command, web hook
-| Quay + Clair scanner |->| CIPolicE |-> digital signature on image
-+----------------------+  +----------+-> simple accept/reject
++-------------------------------------------+  +------------------+
+| Docker Hub/Registry/RH Registry/OpenShift |  | Single container |
++-------------------------------------------+  +------------------+
+          |--------------------------------------|    ^
++---------|                               ^-----------|
+|         v                                           |
+| +----------------------+  +----------+-> shell/oc command, web hook
+| | Quay + Clair scanner |->| CIPolicE |-> digital signature on image
+| +----------------------+  +----------+-> simple accept/reject
+| +----------------------+     ^
+|>| Other image scanners |-----|
+  +----------------------+
+
+CIPolicE can therefore enforce policies regarding security issues (CVEs,
+malware, permissions), quality issues (consistency, layers),
+compatibility issues (hardware, container engine flavours) or any other
+issues that can be expressed as metrics.
 
 CIPolicE is the result of a joint academic-industry research project
 involving the Service Prototyping Lab of Zurich University of Applied
@@ -57,6 +71,9 @@ colon-separated function name), or web hooks. Conditions are evaluated
 over JSON-formatted dictionary messages. The special action break
 terminates the rule processing per event. For an example including some
 invalid rules, have a look at src/*.rules.
+
+The conditions syntax is documented at:
+https://zerosteiner.github.io/rule-engine/
 
 In the "src/sign" folder there are also experimental actions to
 cryptographically sign that images have been scanned and passed the

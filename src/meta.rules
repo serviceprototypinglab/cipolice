@@ -1,0 +1,7 @@
+# For use with test/scan-meta.py:
+# python3 cipolice.py -mr meta.rules
+
+labels == []
+	containeractions.py:echo Not good, you should use labels. Especially for images being {size-mb} MB in size.
+labels != []
+	containeractions.py:echo Great, somebody uses labels.

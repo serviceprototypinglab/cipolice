@@ -86,6 +86,16 @@ def applyrules(rerules, msg, g):
                         impcmd = f"import {mod[:-3]}"
                         #print("IMPORT", impcmd)
                         exec(impcmd)
+                        if " " in func:
+                            func, *params = func.split(" ")
+                            nparams = []
+                            for param in params:
+                                if param.startswith("{") and param.endswith("}"):
+                                    if param[1:-1] in msg:
+                                        param = msg[param[1:-1]]
+                                nparams.append(param)
+                            params = [f"\"{param}\"" for param in nparams]
+                            funcparamlist = ",".join(params)
                         funccmd = f"a = {mod[:-3]}.{func}({funcparamlist})"
                         #print("INVOKE", funccmd)
                         exec(funccmd)
