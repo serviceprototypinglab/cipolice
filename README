@@ -47,7 +47,7 @@ From source:
  # built-in test trigger, with optional message
  python3 cipolice.py -t [{"msg..."}]
 
- # message queue trigger
+ # message queue trigger; needs RabbitMQ running
  python3 misc/mq-publisher.py
  python3 cipolice.py -mr clair.rules
 
@@ -60,6 +60,11 @@ With container:
  docker pull nginx:latest
  sh misc/cipolice-docker.sh
  sh misc/http-publisher.sh clair # in 2nd terminal
+
+Integrated scenario with container composition:
+
+ cd src/test
+ docker-compose up
 
 Rules
 -----
@@ -79,10 +84,13 @@ In the "src/sign" folder there are also experimental actions to
 cryptographically sign that images have been scanned and passed the
 policy.
 
-Image Scanner
--------------
+Image Scanners
+--------------
 
 Please have a look at the separate README file within the "scanning"
-folder. The scanning part scans individual images and generates suitable
-input for the policy engine. It is supposed to be integrated with
-OpenShift, although that part is under development.
+folder for a sophisticated CVE scanner. It scans individual images or
+whole registries and generates suitable input for the policy engine. It
+is supposed to be integrated with OpenShift, although that part is under
+development.
+
+A simple metadata scanner is available in the "src/test" folder.
