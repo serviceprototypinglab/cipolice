@@ -63,7 +63,8 @@ def scan_images(registryapi, userid):
         wait = 1
         while True:
             try:
-                connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+                # TODO setting to 0 is discouraged, but proper handling would require adaptive reconnection later
+                connection = pika.BlockingConnection(pika.ConnectionParameters("localhost", heartbeat=0))
             except:
                 print(f"- not yet ready; wait {wait}s...")
                 time.sleep(wait)

@@ -74,11 +74,16 @@ def queueloop(ruleset):
 
     channel = connection.channel()
 
-    for method_frame, properties, body in channel.consume("hello"):
-        #print(method_frame, properties, body, type(body))
-        msg = json.loads(body.decode())
-        channel.basic_ack(method_frame.delivery_tag)
-        runrules(msg, ruleset)
+    while True:
+        try:
+            for method_frame, properties, body in channel.consume("hello"):
+                #print(method_frame, properties, body, type(body))
+                msg = json.loads(body.decode())
+                channel.basic_ack(method_frame.delivery_tag)
+                runrules(msg, ruleset)
+        except:
+            print("- queue presumably not yet ready; wait 1s")
+            time.sleep(1)
 
     #requeued_messages = channel.cancel()
     #connection.close()
