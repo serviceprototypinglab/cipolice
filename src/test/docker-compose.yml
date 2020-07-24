@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  # The postgres, clair and registry containers have their own docker-compose.yml.
+  # i.e. for more sophisticated scanning, including CVEs, these should eventually be used.
+  # By default the CIPolicE container listens to HTTP and would not need the MQ...
+  messagequeue:
+    container_name: rabbit
+    image: rabbitmq:latest
+    network_mode: host
+
+  policyengine:
+    container_name: cipolice
+    image: jszhaw/cipolice:latest
+    network_mode: host
+    environment:
+      RABBITMQ_HOST: rabbit
+
+  metascanner:
+    containername: metascanner
+    image: jszhaw/scanmeta:latest
+    network_mode: host
+    environment:
+      RABBITMQ_HOST: rabbit
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"

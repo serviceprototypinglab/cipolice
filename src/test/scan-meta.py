@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import subprocess
+import time
 try:
     import pika
 except:
@@ -48,7 +49,17 @@ def get_labels(img):
 def scan_images(registryapi, userid):
     if "pika" in globals():
         printcol("Setting up message queue...")
-        connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+        wait = 1
+        while True:
+            try:
+                connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+            except:
+                print(f"- not yet ready; wait {wait}s...")
+                time.sleep(wait)
+                wait *= 1.5
+                wait = int(wait * 10) / 10
+            else:
+                break
         channel = connection.channel()
         channel.queue_declare(queue="hello")
 
