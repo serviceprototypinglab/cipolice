@@ -9,4 +9,4 @@ RUN apt-get update && apt-get --assume-yes install --no-install-recommends docke
 
 COPY scan-meta.py /opt/
 
-ENTRYPOINT ["python3", "/opt/scan-meta.py"]
+ENTRYPOINT ["python3", "-u", "/opt/scan-meta.py"]

@@ -9,4 +9,4 @@ echo "CIPolicE launch options: $opts"
 
 fname=`readlink -f $0`
 cd `dirname $fname`
-python3 cipolice.py $opts
+python3 -u cipolice.py $opts
