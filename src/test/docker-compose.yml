@@ -17,8 +17,9 @@ services:
       RABBITMQ_HOST: rabbit
 
   metascanner:
-    containername: metascanner
+    container_name: metascanner
     image: jszhaw/scanmeta:latest
+    command: jszhaw https://hub.docker.com/v2/
     network_mode: host
     environment:
       RABBITMQ_HOST: rabbit

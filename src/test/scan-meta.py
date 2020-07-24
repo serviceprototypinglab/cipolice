@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import time
+import sys
 try:
     import pika
 except:
@@ -10,6 +11,16 @@ except:
 
 userid = "jszhaw" # username or 'library'
 registryapi = "https://hub.docker.com/v2/" # docker hub or private registry
+
+if len(sys.argv) == 2 and sys.argv[1] in ("-h", "--help"):
+    print("Syntax: scanmeta [<userid>] [<registryapi>]")
+    print(f"Defaults: userid={userid}, registryapi={registryapi}")
+    exit()
+
+if len(sys.argv) >= 2:
+    userid = sys.argv[1]
+if len(sys.argv) >= 3:
+    registryapi = sys.argv[2]
 
 def printcol(s):
     colors = {
