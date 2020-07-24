@@ -41,11 +41,11 @@ def get_names(registryapi, userid):
     names = []
     while True:
         data = json.loads(requests.get(link).text)
+        for item in data['results']:
+            names.append(item['name'])
         if data['next'] is None:
             break
         link = data['next']
-        for item in data['results']:
-            names.append(item['name'])
     return names
 
 def get_labels(img):
@@ -87,6 +87,7 @@ def scan_images(registryapi, userid):
         p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
         imgsize = p.stdout.decode().strip()
 
+        imgsize = imgsize.split("\n")[0]
         if imgsize.endswith("GB"):
             imgsizemb = int(float(imgsize[:-2]) * 1024)
         elif imgsize.endswith("MB"):
