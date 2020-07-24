@@ -60,7 +60,18 @@ if "flask" in globals():
 def queueloop(ruleset):
     print(" * Listening to AMQP...")
 
-    connection = pika.BlockingConnection()
+    wait = 1
+    while True:
+        try:
+            connection = pika.BlockingConnection()
+        except:
+            print(f"- not yet ready; wait {wait}s...")
+            time.sleep(wait)
+            wait *= 1.5
+            wait = int(wait * 10) / 10
+        else:
+            break
+
     channel = connection.channel()
 
     for method_frame, properties, body in channel.consume("hello"):

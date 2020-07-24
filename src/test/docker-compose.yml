@@ -12,9 +12,12 @@ services:
   policyengine:
     container_name: cipolice
     image: jszhaw/cipolice:latest
+    command: -mr meta.rules
     network_mode: host
     environment:
       RABBITMQ_HOST: rabbit
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
   metascanner:
     container_name: metascanner
