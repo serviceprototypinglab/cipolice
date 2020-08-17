@@ -67,10 +67,12 @@ def scan_all(names):
     }
     results_avg = {}
     results_conv = {}
+    results_all = []
     errors = 0
     for image in names:
         try:
             result = check(image, 'latest','pull')
+            results_all.append(result)
             if result[0] == 1:
                 results['Unknown'] += 1
             if result[0] == 2:
@@ -100,6 +102,7 @@ def scan_all(names):
         json.dump(results_avg, f, indent=2)
     with open('conv.json', 'w') as f:
         json.dump(results_conv, f, indent=2)
+    return results_all
 
 
 
@@ -177,6 +180,13 @@ def detail(image, tag):
 
 
 if __name__ == '__main__':
+    mode = 'http'
+    try:
+        with open('config.json') as config:
+            config_json = json.load(config)
+            mode = config_json['mode']
+    except:
+        mode = 'http'
     if len(sys.argv) < 2:
         print("Usage: scan.py <experiment/pull> <image>")
     else:
@@ -192,41 +202,65 @@ if __name__ == '__main__':
                     break
         elif sys.argv[1] == 'cluster':
             names = oc_find()
-            scan_all(names)
+            results = scan_all(names)
+            for result in results:
+                if mode == 'rmq':
+                    message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
+                    print(message)
+                    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+                    channel = connection.channel()
+                    channel.queue_declare(queue='hello')
+                    channel.basic_publish(exchange='',
+                                      routing_key='hello',
+                                      body=message)
+                    connection.close()
+                elif mode == 'http':
+                    message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
+                    print(message)
+                    requests.post('http://localhost:10080', json=message)
         elif sys.argv[1] == 'pull' and len(sys.argv) == 3:
             result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1], 'pull')
-            """
-            message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
-            print(message)
-            connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-            channel = connection.channel()
-            channel.queue_declare(queue='hello')
-            channel.basic_publish(exchange='',
-                              routing_key='hello',
-                              body=message)
-            connection.close()
-            """
-            message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
-            print(message)
-            requests.post('http://localhost:10080', json=message)
+            if mode == 'rmq':
+                message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
+                print(message)
+                connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+                channel = connection.channel()
+                channel.queue_declare(queue='hello')
+                channel.basic_publish(exchange='',
+                                  routing_key='hello',
+                                  body=message)
+                connection.close()
+            elif mode == 'http':
+                message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
+                print(message)
+                requests.post('http://localhost:10080', json=message)
         elif sys.argv[1] == 'push' and len(sys.argv) == 3:
             result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1], 'push')
-            """
-            message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
-            print(message)
-            connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-            channel = connection.channel()
-            channel.queue_declare(queue='hello')
-            channel.basic_publish(exchange='',
-                              routing_key='hello',
-                              body=message)
-            connection.close()
-            """
-            message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
-            print(message)
-            requests.post('http://localhost:10080', json=message)
+            if mode == 'rmq':
+                message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
+                print(message)
+                connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+                channel = connection.channel()
+                channel.queue_declare(queue='hello')
+                channel.basic_publish(exchange='',
+                                  routing_key='hello',
+                                  body=message)
+                connection.close()
+            elif mode == 'http':
+                message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
+                print(message)
+                requests.post('http://localhost:10080', json=message)
         elif sys.argv[1] == 'detail' and len(sys.argv) == 3:
             detail(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1])
+        elif sys.argv[1] == 'config' and len(sys.argv) == 2:
+            select = input("Press 1 for HTTP mode or 2 for RabbitMQ mode: ")
+            with open('config.json', 'w') as config:
+                if select == "1":
+                    config_json = {"mode": "http"}
+                    json.dump(config_json, config)
+                elif select == "2":
+                    config_json = {"mode": "rmq"}
+                    json.dump(config_json, config)
 
 
         else:

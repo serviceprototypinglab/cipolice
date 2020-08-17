@@ -23,9 +23,17 @@ and during that time it will return no vulnerabilities. This takes 20-30 minutes
 
 Use the "oc" branch of this repository to deploy the scanner to Openshift. Please keep in mind this deployment is experimental. The branch has a modified README with the setup instructions to recreate the deployment.
 
+## Initial configuration
+
+Use:
+```
+$ python3 scan.py config
+```
+to select HTTP or RabbitMQ mode, to match the mode the rule engine operates in. This is written to a configuration file so it must only be changed if the rule engine mode changes.
+
 ## Usage
 
-The program has 3 modes, 'experiment', 'detail' and 'pull'.
+The program has 3 modes, 'cluster', 'detail' and 'pull'.
 
 ### Pull/push mode
 
