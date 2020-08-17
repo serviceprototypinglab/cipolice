@@ -5,16 +5,32 @@ When Docker container images are scanned for quality deficiencies and
 security vulnerabilities, the outcome is a set of metrics. What would be
 the next steps to act on that?
 
-CIPolicE! This tool implements a durable_rules framework to allow for
-rule-controlled follow-up actions, and furthermore ships with powerful
-default rules useful in containerised environments, e.g. OpenShift.
+CIPolicE! This tool builds on the rule_engine framework to allow for
+rule-controlled follow-up actions based on image metrics, and
+furthermore ships with powerful default rules useful in containerised
+environments, e.g. OpenShift.
 
-CIPolicE integrates with web hooks from Quay to make it work as
-invisible but decisive part of your container image workflow.
+CIPolicE integrates with web hooks from scan tools to make it work as
+invisible but decisive part of your container image workflow; although
+other triggers are possible as well. HTTP and AMQP are implemented.
 
-+----------------------+  +----------+-> shell command
-| Quay + Clair scanner |->| CIPolicE |-> oc command
-+----------------------+  +----------+-> simple accept/reject
++-------------------------------------------+  +------------------+
+| Docker Hub/Registry/RH Registry/OpenShift |  | Single container |
++-------------------------------------------+  +------------------+
+          |--------------------------------------|    ^
++---------|                               ^-----------|
+|         v                                           |
+| +----------------------+  +----------+-> shell/oc command, web hook
+| | Quay + Clair scanner |->| CIPolicE |-> digital signature on image
+| +----------------------+  +----------+-> simple accept/reject
+| +----------------------+     ^
+|>| Other image scanners |-----|
+  +----------------------+
+
+CIPolicE can therefore enforce policies regarding security issues (CVEs,
+malware, permissions), quality issues (consistency, layers),
+compatibility issues (hardware, container engine flavours) or any other
+issues that can be expressed as metrics.
 
 CIPolicE is the result of a joint academic-industry research project
 involving the Service Prototyping Lab of Zurich University of Applied
@@ -26,17 +42,33 @@ Installation and Usage
 From source:
 
  cd src/
- pip(3) install -r dependencies.txt
- python3 cipolice.py -t
+ pip(3) install -r requirements.txt
+
+ # built-in test trigger, with optional message
+ python3 cipolice.py -t [{"msg..."}]
+
+ # message queue trigger; needs RabbitMQ running
+ python3 misc/mq-publisher.py
+ python3 cipolice.py -mr clair.rules
+
+ # web request trigger
+ python3 cipolice.py -w
+ sh misc/http-publisher.sh example # in 2nd terminal
 
 With container:
 
  docker pull nginx:latest
- docker run -ti -p 10080:10080 -v /var/run/docker.sock:/var/run/docker.sock cipolice
- curl -X POST -d '{"image": "nginx:latest", "level": 3}' http://localhost:10080/
+ sh misc/cipolice-docker.sh
+ sh misc/http-publisher.sh clair # in 2nd terminal
+
+Integrated scenario with container composition:
+
+ cd src/test
+ docker-compose up
 
 Rules
 -----
+
 Rules follow a condition-action model, with actions indented as block
 under each condition. Comments (#) are allowed. Actions can be shell
 scripts (must end in .sh), Python functions (must end in .py with
@@ -44,3 +76,21 @@ colon-separated function name), or web hooks. Conditions are evaluated
 over JSON-formatted dictionary messages. The special action break
 terminates the rule processing per event. For an example including some
 invalid rules, have a look at src/*.rules.
+
+The conditions syntax is documented at:
+https://zerosteiner.github.io/rule-engine/
+
+In the "src/sign" folder there are also experimental actions to
+cryptographically sign that images have been scanned and passed the
+policy.
+
+Image Scanners
+--------------
+
+Please have a look at the separate README file within the "scanning"
+folder for a sophisticated CVE scanner. It scans individual images or
+whole registries and generates suitable input for the policy engine. It
+is supposed to be integrated with OpenShift, although that part is under
+development.
+
+A simple metadata scanner is available in the "src/test" folder.

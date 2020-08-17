@@ -22,7 +22,11 @@ if "flask" in globals():
 web_ruleset = None
 
 def augment(msg):
-    p = subprocess.run(f"docker inspect {msg['image']} | jq '.[0].Config.Labels.maintainer'", shell=True, stdout=subprocess.PIPE)
+    try:
+        p = subprocess.run(f"docker inspect {msg['image']} | jq '.[0].Config.Labels.maintainer'", shell=True, stdout=subprocess.PIPE)
+    except Exception as e:
+        print("(augment failed) " + str(e))
+        return msg
     maint = p.stdout.decode().strip()
     if maint != "null":
         maint = maint[1:-1]
@@ -56,14 +60,30 @@ if "flask" in globals():
 def queueloop(ruleset):
     print(" * Listening to AMQP...")
 
-    connection = pika.BlockingConnection()
+    wait = 1
+    while True:
+        try:
+            connection = pika.BlockingConnection()
+        except:
+            print(f"- not yet ready; wait {wait}s...")
+            time.sleep(wait)
+            wait *= 1.5
+            wait = int(wait * 10) / 10
+        else:
+            break
+
     channel = connection.channel()
 
-    for method_frame, properties, body in channel.consume("hello"):
-        #print(method_frame, properties, body, type(body))
-        msg = json.loads(body.decode())
-        channel.basic_ack(method_frame.delivery_tag)
-        runrules(msg, ruleset)
+    while True:
+        try:
+            for method_frame, properties, body in channel.consume("hello"):
+                #print(method_frame, properties, body, type(body))
+                msg = json.loads(body.decode())
+                channel.basic_ack(method_frame.delivery_tag)
+                runrules(msg, ruleset)
+        except:
+            print("- queue presumably not yet ready; wait 1s")
+            time.sleep(1)
 
     #requeued_messages = channel.cancel()
     #connection.close()
@@ -75,9 +95,9 @@ def main():
 
     parser = argparse.ArgumentParser(description="CIPolicE")
     if "flask" in globals():
-        parser.add_argument("-w", "--web", action="store_true", help="Run as web service on port 10080.")
+        parser.add_argument("-w", "--web", action="store_true", help="Run as web service on port 10080/HTTP.")
     if "pika" in globals():
-        parser.add_argument("-m", "--mq", action="store_true", help="Run as message queue client on port XXX.")
+        parser.add_argument("-m", "--mq", action="store_true", help="Run as message queue client on port 5672/AMQP.")
     parser.add_argument("-t", "--test", action="store_true", help="Run in self-test mode.")
     parser.add_argument("-r", "--ruleset", action="store", default=ruleset_default, help=f"Ruleset to use (default: {ruleset_default}).")
     parser.add_argument("msg", nargs="?")
@@ -91,7 +111,7 @@ def main():
     elif args.test:
         msg = args.msg
         if not msg:
-            msg = {"cve": "CVE-2020-7050", "clairresult": -1, "image": "node:12", "compromised": True}
+            msg = {"cve": "CVE-2020-7050", "clairresult": -1, "image": "nginx:latest", "compromised": True}
         else:
             msg = json.loads(msg)
         runrules(msg, args.ruleset)
