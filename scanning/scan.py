@@ -17,7 +17,8 @@ def get_names():
             break
         link = data['next']
         for item in data['results']:
-            names.append(item['name'])
+            if item['name'] not in names:
+                names.append(item['name'])
     print(names)
     return names
 
@@ -29,8 +30,13 @@ def cleanup(names):
 
 def oc_find():
     b = subprocess.run('oc get all -o json', shell=True, stdout=subprocess.PIPE)
-    return find.extract_values(json.loads(b.stdout), 'image')
-
+    images = find.extract_values(json.loads(b.stdout), 'image')
+    for i in range(len(images)):
+        if '@' in images[i]:
+            new_item = images[i].split('@')[0] + ':latest'
+            images[i] = new_item
+    print(images)
+    return(images)
 
 def push(image, tag):
     subprocess.call(f'docker tag {image} localhost:5000/{image}-test', shell=True)
@@ -67,12 +73,13 @@ def scan_all(names):
     }
     results_avg = {}
     results_conv = {}
-    results_all = []
+    results_all = {}
     errors = 0
     for image in names:
         try:
             result = check(image, 'latest','pull')
-            results_all.append(result)
+            print(result)
+            results_all[image] = result
             if result[0] == 1:
                 results['Unknown'] += 1
             if result[0] == 2:
@@ -203,9 +210,10 @@ if __name__ == '__main__':
         elif sys.argv[1] == 'cluster':
             names = oc_find()
             results = scan_all(names)
-            for result in results:
+            print(results)
+            for key, value in results.items():
                 if mode == 'rmq':
-                    message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
+                    message = f'{{"image": "{key}", "level": {value}}}'
                     print(message)
                     connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
                     channel = connection.channel()
@@ -215,7 +223,7 @@ if __name__ == '__main__':
                                       body=message)
                     connection.close()
                 elif mode == 'http':
-                    message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
+                    message = {"image": key, "level": value[0], "avg": value[1]}
                     print(message)
                     requests.post('http://localhost:10080', json=message)
         elif sys.argv[1] == 'pull' and len(sys.argv) == 3:
