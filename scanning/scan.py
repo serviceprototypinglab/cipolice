@@ -1,11 +1,12 @@
+from typing import Counter
+from datetime import datetime
+import os
 import requests
 import pika
 import json
 import subprocess
 import sys
 import find
-import calendar
-import time
 
 
 def get_names():
@@ -19,8 +20,8 @@ def get_names():
         for item in data['results']:
             if item['name'] not in names:
                 names.append(item['name'])
-    print(names)
-    return names
+    print(names[:10])
+    return names[:10]
 
 
 def cleanup(names):
@@ -45,6 +46,11 @@ def push(image, tag):
     return json.loads(p.stdout)
 
 
+def scan(image, tag):
+    p = subprocess.run(f'TRIVY_NEW_JSON_SCHEMA=true trivy -q image -f json {image}:{tag}', shell=True, stdout=subprocess.PIPE)
+    return json.loads(p.stdout)
+
+
 def pull(image, tag):
     subprocess.call(f'docker pull {image}:{tag}', shell=True)
     p = push(image, tag)
@@ -63,13 +69,11 @@ def pull(image, tag):
 
 def scan_all(names):
     results = {
-        "Unknown": 0,
-        "Negligible": 0,
-        "Low": 0,
-        "Medium": 0,
-        "High": 0,
-        "Critical": 0,
-        "Defcon1": 0
+        "UNKNOWN": 0,
+        "LOW": 0,
+        "MEDIUM": 0,
+        "HIGH": 0,
+        "CRITICAL": 0,
     }
     results_avg = {}
     results_conv = {}
@@ -77,91 +81,88 @@ def scan_all(names):
     errors = 0
     for image in names:
         try:
-            result = check(image, 'latest','pull')
+            print(f"checking first image: {image}")
+            result = check(image, 'latest')
             print(result)
             results_all[image] = result
             if result[0] == 1:
-                results['Unknown'] += 1
+                results['UNKNOWN'] += 1
             if result[0] == 2:
-                results['Negligible'] += 1
+                results['LOW'] += 1
             if result[0] == 3:
-                results['Low'] += 1
+                results['MEDIUM'] += 1
             if result[0] == 4:
-                results['Medium'] += 1
+                results['HIGH'] += 1
             if result[0] == 5:
-                results['High'] += 1
-            if result[0] == 6:
-                results['Critical'] += 1
-            if result[0] == 7:
-                results['Defcon1'] += 1
+                results['CRITICAL'] += 1
             results_avg[image] = result[1]
             results_conv[image] = result[2]
-        except:
+        except Exception as e:
+            print(e)
             errors += 1
     print(results)
     print(results_avg)
     print(results_conv)
     print (f'Errors: {errors}')
     print(len(names))
-    with open('max.json', 'w') as f:
+
+    timestamped = os.getenv('CIPOLICE_TIMESTAMPED_OUTPUT', 'False')
+    timestamp = ''
+    if timestamped == 'True':
+        timestamp = datetime.today().strftime('%Y-%m-%d-')
+
+    output_path = os.getenv('CIPOLICE_OUTPUT_PATH', '.')
+
+    with open(f'{output_path}/{timestamp}max.json', 'w') as f:
         json.dump(results, f, indent=2)
-    with open('avg.json', 'w') as f:
+    with open(f'{output_path}/{timestamp}avg.json', 'w') as f:
         json.dump(results_avg, f, indent=2)
-    with open('conv.json', 'w') as f:
+    with open(f'{output_path}/{timestamp}conv.json', 'w') as f:
         json.dump(results_conv, f, indent=2)
     return results_all
 
 
 
-def check(image, tag, mode):
-    if mode == 'pull':
-        result = pull(image, tag)
-    elif mode == 'push':
-        result = push(image, tag)
+def check(image, tag):
+    result = scan(image, tag)
     tilmax = 0
     tilavg = 0
-    if 'Defcon1' in result['Vulnerabilities']:
-        tilmax = 7
-    elif 'Critical' in result['Vulnerabilities']:
-        tilmax = 6
-    elif 'High' in result['Vulnerabilities']:
-        tilmax = 5
-    elif 'Medium' in result['Vulnerabilities']:
-        tilmax = 4
-    elif 'Low' in result['Vulnerabilities']:
-        tilmax = 3
-    elif 'Negligible' in result['Vulnerabilities']:
-        tilmax = 2
-    elif 'Unknown' in result['Vulnerabilities']:
-        tilmax = 1
-    else:
-        tilmax = 0
-    sum = 0
+    summary = Counter()
     count = 0
-    if 'Defcon1' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['Defcon1'])*7
-        count += len(result['Vulnerabilities']['Defcon1'])
-    if 'Critical' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['Critical'])*6
-        count += len(result['Vulnerabilities']['Critical'])
-    if 'High' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['High'])*5
-        count += len(result['Vulnerabilities']['High'])
-    if 'Medium' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['Medium'])*4
-        count += len(result['Vulnerabilities']['Medium'])
-    if 'Low' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['Low'])*3
-        count += len(result['Vulnerabilities']['Low'])
-    if 'Negligible' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['Negligible'])*2
-        count += len(result['Vulnerabilities']['Negligible'])
-    if 'Unknown' in result['Vulnerabilities']:
-        sum += len(result['Vulnerabilities']['Unknown'])
-        count += len(result['Vulnerabilities']['Unknown'])
+    if 'Results' in result:
+        for res in result['Results']:
+            if 'Vulnerabilities' in res:
+                for vuln in res['Vulnerabilities']:
+                    count += 1
+                    if 'CRITICAL' in vuln['Severity']:
+                        tilmax = 5 if tilmax <= 5 else tilmax
+                        summary['CRITICAL'] += 1
+                    elif 'HIGH' in vuln['Severity']:
+                        tilmax = 4 if tilmax <= 4 else tilmax
+                        summary['HIGH'] += 1
+                    elif 'MEDIUM' in vuln['Severity']:
+                        tilmax = 3 if tilmax <= 3 else tilmax
+                        summary['MEDIUM'] += 1
+                    elif 'LOW' in vuln['Severity']:
+                        tilmax = 2 if tilmax <= 2 else tilmax
+                        summary['LOW'] += 1
+                    elif 'UNKNOWN' in vuln['Severity']:
+                        tilmax = 1 if tilmax <= 1 else tilmax
+                        summary['UNKNOWN'] += 1
+    sum = 0
+    sum += summary['CRITICAL']*5
+    sum += summary['HIGH']*4
+    sum += summary['MEDIUM']*3
+    sum += summary['LOW']*2
+    sum += summary['UNKNOWN']*1
+
+    if count == 0:
+        # no vulnarbilites found
+        return [0, 0, 0]
+
     tilavg = sum/count
-    print(count)
-    itlconv = min([tilavg + count/50, 7])
+    print(summary)
+    itlconv = min([tilavg + count/50, 5])
     return [tilmax, tilavg, itlconv]
 
 
@@ -199,11 +200,13 @@ if __name__ == '__main__':
     else:
         if sys.argv[1] == 'experiment':
             while True:
-                flag = input('This option will use a lot of storage and some data cannot be automatically cleaned up. Continue? [y/n]')
+                #flag = input('This option will use a lot of storage and some data cannot be automatically cleaned up. Continue? [y/n]')
+                flag = 'y'
                 if flag == 'y':
+                    # TODO enable get names again
                     names = get_names()
                     scan_all(names)
-                    cleanup(names)
+                    #cleanup(names)
                     break
                 elif flag == 'n':
                     break
