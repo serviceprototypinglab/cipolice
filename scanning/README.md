@@ -7,9 +7,16 @@ tag and the highest CVE severity level found in the image.
 
 ## Prerequisites
 
-- Install Docker and docker-compose
-- Install Klar, erlang and RabbitMQ server with `scanner_setup.sh`
+- Install Docker
+- Install trivy, options can be found [here](https://aquasecurity.github.io/trivy/latest/getting-started/installation/)
+- Install Klar, erlang and RabbitMQ server with `scanner_setup.sh` (optional for scanner only use-case)
 - `pip install -r requirements.txt`
+
+## Building Container
+
+```
+docker build -t <repo>/<image-name>:<tag> .
+```
 
 ## Deploying on Openshift (Experimental)
 
