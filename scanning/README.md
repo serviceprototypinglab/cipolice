@@ -88,3 +88,12 @@ $ python3 scan.py cluster
 
 Experiment mode will scan all images of the official `library` registry to
 obtain an overview of the security status of official images.
+
+This mode offers two option that can be set via environment vairables:
+
+- `CIPOLICE_TIMESTAMPED_OUTPUT`
+    - `False` (default) - write output files without timestamp
+    - `True` - write output files with date timestamp (e.g. `2021-01-01-max.json`)
+- `CIPOLICE_OUTPUT_PATH`
+    - `.` (default) - write output files to current directory
+    - `<path>` - path to write output files to
