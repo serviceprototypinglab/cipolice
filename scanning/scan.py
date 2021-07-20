@@ -20,8 +20,8 @@ def get_names():
         for item in data['results']:
             if item['name'] not in names:
                 names.append(item['name'])
-    print(names[:10])
-    return names[:10]
+    print(names)
+    return names
 
 
 def cleanup(names):
@@ -39,6 +39,7 @@ def oc_find():
     print(images)
     return(images)
 
+
 def push(image, tag):
     subprocess.call(f'docker tag {image} localhost:5000/{image}-test', shell=True)
     subprocess.call(f'docker push localhost:5000/{image}-test', shell=True)
@@ -49,22 +50,6 @@ def push(image, tag):
 def scan(image, tag):
     p = subprocess.run(f'TRIVY_NEW_JSON_SCHEMA=true trivy -q image -f json {image}:{tag}', shell=True, stdout=subprocess.PIPE)
     return json.loads(p.stdout)
-
-
-def pull(image, tag):
-    subprocess.call(f'docker pull {image}:{tag}', shell=True)
-    p = push(image, tag)
-    """
-    try:
-        images = oc_find()
-        if f'{image}:{tag}' in images:
-            print(f"Warning, image {image} is currently in use")
-        else:
-            print("Scanned image has not been deployed to the cluster")
-    except:
-        print("Warning, cannot check cluster status")
-    """
-    return p
 
 
 def scan_all(names):
@@ -167,10 +152,10 @@ def check(image, tag):
 
 
 def detail(image, tag):
-    result = pull(image, tag)
-    print(json.dumps(result['Vulnerabilities'], indent=2))
+    result = scan(image, tag)
+    print(json.dumps(result['Results'], indent=2))
     with open('output.json', 'w') as f:
-        json.dump(result['Vulnerabilities'], f, indent=2)
+        json.dump(result['Results'], f, indent=2)
     choice = input("Manually whitelist image? [y/n]")
     if choice == 'y':
         message = {'image': image, 'override': True}
@@ -196,7 +181,7 @@ if __name__ == '__main__':
     except:
         mode = 'http'
     if len(sys.argv) < 2:
-        print("Usage: scan.py <experiment/pull> <image>")
+        print("Usage: scan.py <scan/detail> <image>")
     else:
         if sys.argv[1] == 'experiment':
             while True:
@@ -229,24 +214,8 @@ if __name__ == '__main__':
                     message = {"image": key, "level": value[0], "avg": value[1]}
                     print(message)
                     requests.post('http://localhost:10080', json=message)
-        elif sys.argv[1] == 'pull' and len(sys.argv) == 3:
-            result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1], 'pull')
-            if mode == 'rmq':
-                message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
-                print(message)
-                connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-                channel = connection.channel()
-                channel.queue_declare(queue='hello')
-                channel.basic_publish(exchange='',
-                                  routing_key='hello',
-                                  body=message)
-                connection.close()
-            elif mode == 'http':
-                message = {"image": sys.argv[2], "level": result[0], "avg": result[1]}
-                print(message)
-                requests.post('http://localhost:10080', json=message)
-        elif sys.argv[1] == 'push' and len(sys.argv) == 3:
-            result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1], 'push')
+        elif sys.argv[1] == 'scan' and len(sys.argv) == 3:
+            result = check(sys.argv[2].split(':')[0], sys.argv[2].split(':')[1])
             if mode == 'rmq':
                 message = f'{{"image": "{sys.argv[2]}", "level": {result}}}'
                 print(message)
@@ -275,4 +244,4 @@ if __name__ == '__main__':
 
 
         else:
-            print("Usage: scan.py <experiment/pull> <image>")
+            print("Usage: scan.py <scan/detail> <image>")
