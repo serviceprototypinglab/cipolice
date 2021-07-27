@@ -12,9 +12,10 @@ tag and the highest CVE severity level found in the image.
 - Install Klar, erlang and RabbitMQ server with `scanner_setup.sh` (optional for scanner only use-case)
 - `pip install -r requirements.txt`
 
-## Building Container
+## Build Scanner Container
 
 ```
+cd scanning
 docker build -t <repo>/<image-name>:<tag> .
 ```
 
