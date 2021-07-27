@@ -15,7 +15,6 @@ tag and the highest CVE severity level found in the image.
 ## Build Scanner Container
 
 ```
-cd scanning
 docker build -t <repo>/<image-name>:<tag> .
 ```
 
