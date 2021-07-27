@@ -1,23 +1,22 @@
 # Image Scanner
 
-Wraps around `docker pull` and scans an image with Clair. Will print the image
+Wraps around the trivy image scanner. Will print the image
 tag and the highest CVE severity level found in the image.
+
+> The scanning component has been migrated from Clair to trivy for an easier integration in pipeline or CI/CD usecases. Some functions may not be fully tested with the new scanning engine.
 
 ## Prerequisites
 
-- Install Docker and docker-compose
-- Install Klar, erlang and RabbitMQ server with `scanner_setup.sh`
+- Install Docker
+- Install trivy, options can be found [here](https://aquasecurity.github.io/trivy/latest/getting-started/installation/)
+- Install Klar, erlang and RabbitMQ server with `scanner_setup.sh` (optional for scanner only use-case)
 - `pip install -r requirements.txt`
 
-## Setup
+## Build Scanner Container
 
-Run clair:
 ```
-cd clair-test
-sudo docker-compose up -d
+docker build -t <repo>/<image-name>:<tag> .
 ```
-Keep in mind that clair takes a while to populate the CVE database the first time,
-and during that time it will return no vulnerabilities. This takes 20-30 minutes.
 
 ## Deploying on Openshift (Experimental)
 
@@ -33,41 +32,46 @@ to select HTTP or RabbitMQ mode, to match the mode the rule engine operates in. 
 
 ## Usage
 
-The program has 3 modes, 'cluster', 'detail' and 'pull'.
+The program has 4 modes, 'cluster', 'detail', 'scan' and 'experiment'.
 
-### Pull/push mode
+Available commands are:
 
-Pull mode will pull the image to the local registry and scan it with clair.
+```
+python3 scan.py scan <image>        # run scan mode on single image
+python3 scan.py detail <image>      # run detailed mode on single image
+python3 scan.py experiment          # scan all DockerHub library images
+python3 scan.py cluster             # scan all images found on an OpenShift cluster
+```
+
+### Scan mode
+
+The scanner will scan the given image using trivy.
 It will print the 'message' that will be sent to the policy engine.
 
-Push mode can be used for a custom image.
+This mode can also be used for local images.
 
 Example:
 ```
-$ python3 scan.py pull nginx:latest
+$ python3 scan.py scan nginx:latest
 
 ...
 
-Image: nginx:latest, Result: 3
+{'image': 'local/executor:latest', 'level': 4, 'avg': 2.3706896551724137}
 ```
 The severity levels for clair are:
-- None (0)
-- Unknown (1)
-- Negligible (2)
-- Low (3)
-- Medium (4)
-- High (5)
-- Critical (6)
-- Defcon1 (7)
+- UNKNOWN (1)
+- LOW (2)
+- MEDIUM (3)
+- HIGH (4)
+- CRITICAL (5)
 
-Refer to clair's documentation for a detailed explanation of the severity levels.
-The program will return 'None' if no vlunerabilities are found by clair.
+Refer to trivy's documentation for a detailed explanation of the severity levels.
 
-This option will submit the result to the rule engine via RabbitMQ.
+This option will submit the result to the rule engine via RabbitMQ or HTTP.
 
 ### Detail mode
 
-If the detailed output from Clair is desired, run the above example as follows:
+If the detailed output from trivy is desired, run the above example as follows:
 
 ```
 $ python3 scan.py detail nginx:latest
@@ -92,14 +96,11 @@ $ python3 scan.py cluster
 Experiment mode will scan all images of the official `library` registry to
 obtain an overview of the security status of official images.
 
-Be aware that this
-mode will use a large amount of storage and despite cleaning up, some data will
-remain. As of mid April 2020 it can consume ~80 GB and only clean up ~30 GB.
+This mode offers two option that can be set via environment vairables:
 
- Here are some sample results, limited to 'Low' vulnerabilities or higher.
-
-- Total images: 160
-- Images scanned successfully: 148
-- At least one Low: 108 (73%)
-- At least one Medium: 39 (26%)
-- At least one High: 6 (4%)
+- `CIPOLICE_TIMESTAMPED_OUTPUT`
+    - `False` (default) - write output files without timestamp
+    - `True` - write output files with date timestamp (e.g. `2021-01-01-max.json`)
+- `CIPOLICE_OUTPUT_PATH`
+    - `.` (default) - write output files to current directory
+    - `<path>` - path to write output files to
